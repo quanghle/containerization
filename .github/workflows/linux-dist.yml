@@ -194,7 +194,8 @@ jobs:
             -i docker.io/library/alpine:3.22 \
             --id smoke --no-network \
             /bin/echo dist-smoke-ok" "$RUNNER_TEMP/smoke.log"
-          grep -q dist-smoke-ok "$RUNNER_TEMP/smoke.log"
+          # The script(1) header echoes the command, so anchor the match.
+          grep -q '^dist-smoke-ok' "$RUNNER_TEMP/smoke.log"
 
   release:
     name: Publish release
