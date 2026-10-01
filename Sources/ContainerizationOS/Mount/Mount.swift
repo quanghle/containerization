@@ -68,6 +68,14 @@ extension Mount {
             self.clear = clear
             self.flag = flag
         }
+
+        #if canImport(Glibc)
+        // glibc >= 2.42 imports the MS_* constants as UInt32.
+        @_disfavoredOverload
+        public init(_ clear: Bool, _ flag: UInt32) {
+            self.init(clear, Flag(flag))
+        }
+        #endif
     }
 
     #if os(Linux)
