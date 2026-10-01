@@ -18,6 +18,9 @@ import ArgumentParser
 import Containerization
 import ContainerizationError
 import ContainerizationExtras
+#if os(Linux)
+import ContainerizationNetlink
+#endif
 import ContainerizationOCI
 import ContainerizationOS
 import Foundation
@@ -649,6 +652,7 @@ extension Application {
             var interfaces: [any Interface] = []
             var dnsConfig: DNS? = nil
             var hostsConfig: Hosts? = nil
+            var tapNames: [String] = []
 
             if !noNetwork {
                 let subnetCIDR = try CIDRv4(subnet)
@@ -687,6 +691,9 @@ extension Application {
                         ? Self.readHostNameservers()
                         : nameservers
                     dnsConfig = DNS(nameservers: resolved)
+                    if let tap = iface as? TAPInterface {
+                        tapNames.append(tap.tapName)
+                    }
                 }
             }
 
@@ -749,6 +756,17 @@ extension Application {
             }
 
             try await container.create()
+
+            // `network` (and the TAPDevice fds it held) was released above, so
+            // cloud-hypervisor re-created each single-queue TAP by name without a
+            // bridge master. Re-attach them now that CH owns the devices.
+            if !tapNames.isEmpty {
+                let session = try NetlinkSession(socket: DefaultNetlinkSocket())
+                for tap in tapNames {
+                    try session.linkSetAttributes(interface: tap, master: bridge)
+                }
+            }
+
             try await container.start()
 
             // Sync the guest pty winsize to the host on start, and on every

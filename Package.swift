@@ -90,6 +90,7 @@ let package = Package(
                 "ContainerizationArchive",
                 "ContainerizationEXT4",
                 "ContainerizationExtras",
+                "ContainerizationNetlink",
                 "ContainerizationOCI",
                 "ContainerizationOS",
             ]
